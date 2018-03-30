@@ -1,0 +1,18 @@
+PATH
+  remote: .
+  specs:
+    SUnit (0.1.0)
+
+GEM
+  remote: https://rubygems.org/
+  specs:
+
+PLATFORMS
+  ruby
+
+DEPENDENCIES
+  SUnit!
+  bundler (~> 1.16)
+
+BUNDLED WITH
+   1.16.1
