@@ -29,7 +29,7 @@ module SUnit
         tests.each_with_index do |test, index|
           test_number = index + 1
           puts format("#{test_number}) #{test.class.name}", :bold)
-          puts "   Description: #{test.description}"
+          puts format("   Description: #{test.description}", :light_blue)
 
           if test.skip?
             skip(test)
@@ -53,7 +53,7 @@ module SUnit
 
         @state = States::FINISHED
       else
-        raise "Called run when finished"
+        raise "run called when not in PENDING state."
       end
     end
 
@@ -107,7 +107,7 @@ module SUnit
 
     def finish(test)
       test.finish
-      puts("   Duration: #{test.duration}s")
+      puts(format("   Duration: #{test.duration}s", :light_blue))
     end
   end
 end

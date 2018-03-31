@@ -6,7 +6,7 @@ module SUnit
       FAIL = "FAIL"
     end
 
-    attr_reader :state, :result
+    attr_reader :state
 
     def initialize
       @state = States::PENDING
