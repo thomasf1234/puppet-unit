@@ -22,7 +22,31 @@ Or install it yourself as:
 
 ## Usage
 
-TODO: Write usage instructions here
+```
+$ bundle exec sunit
+1) MyTest2
+   Description: Testing that 1+2=3
+   Result: Test failed ✘
+  RuntimeError :: ERRRRRORRR
+  /home/vagrant/workspace/NewInfra/sunit/example1.rb:17:in `test'
+  /home/vagrant/workspace/SUnit/lib/SUnit/test_runner.rb:40:in `block in run'
+  /home/vagrant/workspace/SUnit/lib/SUnit/test_runner.rb:29:in `each'
+  /home/vagrant/workspace/SUnit/lib/SUnit/test_runner.rb:29:in `each_with_index'
+  /home/vagrant/workspace/SUnit/lib/SUnit/test_runner.rb:29:in `run'
+  /home/vagrant/workspace/SUnit/exe/sunit:15:in `<top (required)>'
+  /home/vagrant/workspace/NewInfra/vendor/bundle/ruby/2.4.0/bin/sunit:23:in `load'
+  /home/vagrant/workspace/NewInfra/vendor/bundle/ruby/2.4.0/bin/sunit:23:in `<main>'
+   Duration: 0.0s
+2) MyTest
+   Description: Testing that 1+1=2
+   Result: Test passed ✔
+   Duration: 0.0s
+3) MyTest3
+   Description: Testing that 1+2=3
+   Result: Test skipped *
+$ echo $?
+1
+```
 
 ## Development
 
