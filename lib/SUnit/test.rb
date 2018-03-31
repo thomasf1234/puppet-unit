@@ -7,7 +7,7 @@ module SUnit
       SKIPPED = "SKIPPED"
     end
 
-    attr_reader :state, :result
+    attr_reader :state, :result, :assertion
 
     def initialize
       @state = States::NOT_STARTED
@@ -75,12 +75,16 @@ module SUnit
 
     end
 
-    def test
+    def assertion
       raise NotImplementedError.new("Subclasses must implement #{__method__}")
     end
 
     def teardown
 
+    end
+
+    def retry_count
+      0
     end
   end
 end

@@ -6,6 +6,7 @@ require "SUnit"
 $:.unshift(".")
 
 #load all sunit tests
+require "sunit/sunit_helper.rb" if File.exist?("sunit/sunit_helper.rb")
 Dir[File.join("sunit", "**", "*.rb")].each { |file| require file }
 test_klasses = ObjectSpace.each_object(::Class).select { |klass| klass < SUnit::Test }
 tests = test_klasses.map(&:new)

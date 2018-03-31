@@ -11,7 +11,7 @@ module SUnit
 
     module States
       PENDING = "PENDING"
-      RUNNING = "RUNNING"
+      STARTED = "STARTED"
       FINISHED = "FINISHED"
     end
 
@@ -24,7 +24,7 @@ module SUnit
 
     def run
       if pending?
-        @state = States::RUNNING
+        start
         tests = order(@tests)
         tests.each_with_index do |test, index|
           test_number = index + 1
@@ -37,7 +37,12 @@ module SUnit
             begin
               test.start
               test.setup
-              if test.test
+
+              #test.assertion must return an assertion instance
+              test_assertion = test.assertion
+              # raise "test assertion must return SUnit::Assertion instance" if !test_assertion.kind_of?(SUnit::Assertion)
+
+              if test_assertion.true?
                 pass(test)
               else
                 fail(test)
@@ -46,12 +51,18 @@ module SUnit
               error(test, e)
             ensure
               test.teardown
-              finish(test)
+              test.finish
+              puts(format("   Duration: #{test.duration}s", :light_blue))
+              puts("")
             end
           end
         end
 
-        @state = States::FINISHED
+        finish
+
+        puts("")
+        puts(format("Finished in #{duration} seconds", :light_blue))
+        puts(format("#{tests.reject(&:skip?).count} ran, #{tests.select(&:passed?).count} passed, #{tests.select(&:failed?).count} failed", :light_blue))
       else
         raise "run called when not in PENDING state."
       end
@@ -61,12 +72,32 @@ module SUnit
       @state == States::PENDING
     end
 
-    def running?
-      @state == States::RUNNING
+    def started?
+      @state == States::STARTED
     end
 
     def finished?
       @state == States::FINISHED
+    end
+
+    def start
+      @state = States::STARTED
+      @started_at = Time.now
+    end
+
+    def finish
+      @state = States::FINISHED
+      @finished_at = Time.now
+    end
+
+    def duration
+      _duration = if finished?
+                    @finished_at - @started_at
+                  elsif started?
+                    Time.now - @started_at
+                  end
+
+      "%0.1f" % _duration
     end
 
     def order(tests)
@@ -95,6 +126,9 @@ module SUnit
     def fail(test)
       test.result.fail
       puts(format("   Result: Test failed ✘", :red))
+      code_snippet = File.readlines(test.assertion.location.path)[test.assertion.location.lineno-1]
+      puts(format("   ==> #{code_snippet.strip} : expected #{test.assertion.expected} but got #{test.assertion.actual}", :red))
+      puts(format("   ==> #{test.assertion.location.path}", :red))
     end
 
     def error(test, exception)
@@ -103,11 +137,6 @@ module SUnit
       exception.backtrace.each do |line|
         puts(format("  #{line}", :red))
       end
-    end
-
-    def finish(test)
-      test.finish
-      puts(format("   Duration: #{test.duration}s", :light_blue))
     end
   end
 end
