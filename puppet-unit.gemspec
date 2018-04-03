@@ -1,15 +1,15 @@
 
 lib = File.expand_path("../lib", __FILE__)
 $LOAD_PATH.unshift(lib) unless $LOAD_PATH.include?(lib)
-require "SUnit/version"
+require "puppet-unit/version"
 
 Gem::Specification.new do |spec|
-  spec.name          = "SUnit"
-  spec.version       = SUnit::VERSION
+  spec.name          = "puppet-unit"
+  spec.version       = PuppetUnit::VERSION
   spec.authors       = ["abstractx1"]
 
-  spec.summary       = %q{Simple unit testing gem.}
-  spec.description   = %q{Simple unit testing gem.}
+  spec.summary       = %q{Simple puppet unit testing gem.}
+  spec.description   = %q{Simple puppet unit testing gem.}
   spec.license       = "MIT"
 
   # Prevent pushing this gem to RubyGems.org. To allow pushes either set the 'allowed_push_host'
@@ -25,8 +25,10 @@ Gem::Specification.new do |spec|
     f.match(%r{^(test|spec|features)/})
   end
   spec.bindir        = "exe"
-  spec.executables   = "sunit"
+  spec.executables   = "puppet-unit"
   spec.require_paths = ["lib"]
 
   spec.add_development_dependency "bundler", "~> 1.16"
+
+  spec.add_runtime_dependency "ruby-libvirt"
 end

@@ -1,12 +1,15 @@
 require 'yaml'
 require 'singleton'
 
-module SUnit
+module PuppetUnit
   class Config
     include Singleton
 
     DEFAULT_CONFIG = {
-        "order" => "rand"
+        "order" => "rand",
+        "libvirt" => {
+            "connect_uri" => "qemu:///system",
+        }
     }
 
     def get(key)
@@ -16,7 +19,7 @@ module SUnit
     private
     def initialize
       super
-      @config = load_yaml('sunit/config.yaml', DEFAULT_CONFIG)
+      @config = load_yaml('puppet-unit/config.yaml', DEFAULT_CONFIG)
     end
 
     def load_yaml(file_path, defaults)

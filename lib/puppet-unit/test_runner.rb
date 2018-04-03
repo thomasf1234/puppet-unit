@@ -1,11 +1,10 @@
-module SUnit
+module PuppetUnit
   class TestRunner
     STRING_FORMAT_CODES = {
         bold: 1,
         red: 31,
         green: 32,
         yellow: 33,
-        blue: 34,
         light_blue: 36
     }
 
@@ -29,40 +28,49 @@ module SUnit
         tests.each_with_index do |test, index|
           test_number = index + 1
           puts format("#{test_number}) #{test.class.name}", :bold)
-          puts format("   Description: #{test.description}", :light_blue)
+          puts format("   Description: #{test.description}", :bold)
 
           if test.skip?
             skip(test)
           else
             begin
               test.start
-              test.setup
 
-              #test.assertion must return an assertion instance
-              test_assertion = test.assertion
-              # raise "test assertion must return SUnit::Assertion instance" if !test_assertion.kind_of?(SUnit::Assertion)
+              begin
+                test.setup
+                test.set_assertions
 
-              if test_assertion.true?
-                pass(test)
-              else
-                fail(test)
+                test.assertions.each do |assertion|
+                  begin
+                    puts(format("   Assertion: #{assertion.description}", :light_blue))
+
+                    if assertion.true?
+                      pass(assertion)
+                    else
+                      fail(assertion)
+                    end
+                  rescue => assertion_ex
+                    assertion.result.fail
+                    print_error(assertion_ex)
+                  end
+                end
+              rescue => test_ex
+                #reach here if exception raised during setup
+                test.error
+                print_error(test_ex)
               end
-            rescue => e
-              error(test, e)
             ensure
               test.teardown
               test.finish
               puts(format("   Duration: #{test.duration}s", :light_blue))
-              puts("")
             end
           end
+
+          puts("")
         end
 
         finish
-
-        puts("")
-        puts(format("Finished in #{duration} seconds", :light_blue))
-        puts(format("#{tests.reject(&:skip?).count} ran, #{tests.select(&:passed?).count} passed, #{tests.select(&:failed?).count} failed", :light_blue))
+        print_result
       else
         raise "run called when not in PENDING state."
       end
@@ -101,7 +109,7 @@ module SUnit
     end
 
     def order(tests)
-      case SUnit::Config.instance.get("order")
+      case PuppetUnit::Config.instance.get("order")
         when "rand"
           tests.shuffle
         else
@@ -118,25 +126,37 @@ module SUnit
       puts(format("   Result: Test skipped *", :yellow))
     end
 
-    def pass(test)
-      test.result.pass
-      puts(format("   Result: Test passed ✔", :green))
+    def pass(assertion)
+      assertion.result.pass
+      puts(format("   Result: Assertion passed ✔", :green))
     end
 
-    def fail(test)
-      test.result.fail
-      puts(format("   Result: Test failed ✘", :red))
-      code_snippet = File.readlines(test.assertion.location.path)[test.assertion.location.lineno-1]
-      puts(format("   ==> #{code_snippet.strip} : expected #{test.assertion.expected} but got #{test.assertion.actual}", :red))
-      puts(format("   ==> #{test.assertion.location.path}", :red))
-    end
-
-    def error(test, exception)
-      fail(test)
-      puts(format("  #{exception.class.name} :: #{exception.message}", :red))
-      exception.backtrace.each do |line|
-        puts(format("  #{line}", :red))
+    def fail(assertion)
+      assertion.result.fail
+      puts(format("   Result: Assertion failed ✘", :red))
+      assertion.failed_message_lines.each do |line|
+        puts(format("   ==> #{line}", :red))
       end
+    end
+
+    def print_error(exception)
+      puts(format("   #{exception.class.name} :: #{exception.message}", :red))
+      exception.backtrace.each do |line|
+        puts(format("   #{line}", :red))
+      end
+    end
+
+    def print_result
+      puts("")
+      puts(format("Finished in #{duration} seconds", :light_blue))
+      ran_tests = @tests.reject(&:skip?)
+      ran_count = ran_tests.count
+      passed_count = ran_tests.reject(&:has_error?).select(&:passed?).count
+      failed_count = ran_tests.reject(&:has_error?).select(&:failed?).count
+      errored_count = ran_tests.select(&:has_error?).count
+      colour = passed_count == ran_count ? :green : :red
+
+      puts(format("#{ran_count} ran, #{passed_count} passed, #{failed_count} failed, #{errored_count} errored", colour))
     end
   end
 end

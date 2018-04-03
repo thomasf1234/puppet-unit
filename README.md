@@ -1,4 +1,4 @@
-# SUnit
+# puppet-unit
 
 Welcome to your new gem! In this directory, you'll find the files you need to be able to package up your Ruby library into a gem. Put your Ruby code in the file `lib/SUnit`. To experiment with that code, run `bin/console` for an interactive prompt.
 
@@ -9,7 +9,7 @@ TODO: Delete this and the text above, and describe your gem
 Add this line to your application's Gemfile:
 
 ```ruby
-gem 'SUnit'
+gem 'puppet-unit'
 ```
 
 And then execute:
@@ -18,24 +18,24 @@ And then execute:
 
 Or install it yourself as:
 
-    $ gem install SUnit
+    $ gem install puppet-unit
 
 ## Usage
 
 ```
-$ bundle exec sunit
+$ bundle exec puppet-unit
 1) MyTest2
    Description: Testing that 1+2=3
    Result: Test failed ✘
   RuntimeError :: ERRRRRORRR
-  /home/vagrant/workspace/NewInfra/sunit/example1.rb:17:in `test'
-  /home/vagrant/workspace/SUnit/lib/SUnit/test_runner.rb:40:in `block in run'
-  /home/vagrant/workspace/SUnit/lib/SUnit/test_runner.rb:29:in `each'
-  /home/vagrant/workspace/SUnit/lib/SUnit/test_runner.rb:29:in `each_with_index'
-  /home/vagrant/workspace/SUnit/lib/SUnit/test_runner.rb:29:in `run'
-  /home/vagrant/workspace/SUnit/exe/sunit:15:in `<top (required)>'
-  /home/vagrant/workspace/NewInfra/vendor/bundle/ruby/2.4.0/bin/sunit:23:in `load'
-  /home/vagrant/workspace/NewInfra/vendor/bundle/ruby/2.4.0/bin/sunit:23:in `<main>'
+  /home/vagrant/workspace/MyApp/puppet-unit/example1.rb:17:in `test'
+  /home/vagrant/workspace/puppet-unit/lib/SUnit/test_runner.rb:40:in `block in run'
+  /home/vagrant/workspace/puppet-unit/lib/SUnit/test_runner.rb:29:in `each'
+  /home/vagrant/workspace/puppet-unit/lib/SUnit/test_runner.rb:29:in `each_with_index'
+  /home/vagrant/workspace/puppet-unit/lib/SUnit/test_runner.rb:29:in `run'
+  /home/vagrant/workspace/puppet-unit/exe/sunit:15:in `<top (required)>'
+  /home/vagrant/workspace/MyApp/vendor/bundle/ruby/2.4.0/bin/sunit:23:in `load'
+  /home/vagrant/workspace/MyApp/vendor/bundle/ruby/2.4.0/bin/sunit:23:in `<main>'
    Duration: 0.0s
 2) MyTest
    Description: Testing that 1+1=2
@@ -56,7 +56,7 @@ To install this gem onto your local machine, run `bundle exec rake install`. To 
 
 ## Contributing
 
-Bug reports and pull requests are welcome on GitHub at https://github.com/[USERNAME]/SUnit.
+Bug reports and pull requests are welcome on GitHub at https://github.com/[USERNAME]/puppet-unit.
 
 ## License
 

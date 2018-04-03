@@ -1,0 +1,22 @@
+#!/usr/bin/env ruby
+
+require "puppet-unit"
+
+#prepend current directory to LOAD_PATH
+$:.unshift(".")
+
+#load all tests
+require "puppet-unit/helper.rb" if File.exist?("puppet-unit/helper.rb")
+
+tests = []
+test_dirs = ARGV[0] ? [ARGV[0]] : Dir[File.join("puppet-unit", "tests", "*")]
+
+test_dirs.each do |test_dir|
+  tests << PuppetUnit::ModuleTest.new(test_dir)
+end
+
+#run tests
+test_runner = PuppetUnit::TestRunner.new(tests)
+test_runner.run
+
+exit(1) unless tests.all?(&:passed?)

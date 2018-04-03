@@ -1,4 +1,4 @@
-module SUnit
+module PuppetUnit
   class Test
     module States
       NOT_STARTED = "NOT_STARTED"
@@ -7,11 +7,12 @@ module SUnit
       SKIPPED = "SKIPPED"
     end
 
-    attr_reader :state, :result, :assertion
+    attr_reader :state, :assertions
 
     def initialize
       @state = States::NOT_STARTED
-      @result = Result.new
+      @assertions = []
+      @has_error = false
     end
 
     def started?
@@ -26,12 +27,16 @@ module SUnit
       @state == States::SKIPPED
     end
 
+    def has_error?
+      @has_error
+    end
+
     def passed?
-      @result.pass?
+      !has_error? && assertions.all?(&:passed?)
     end
 
     def failed?
-      @result.fail?
+      !passed?
     end
 
     def start
@@ -48,6 +53,10 @@ module SUnit
       @state = States::SKIPPED
     end
 
+    def error
+      @has_error = true
+    end
+
     def duration
       _duration = if finished?
                     @finished_at - @started_at
@@ -58,9 +67,8 @@ module SUnit
       "%0.1f" % _duration
     end
 
-    #Override
     def skip?
-      false
+      @config["skip"] ||= false
     end
 
     def title
@@ -68,23 +76,20 @@ module SUnit
     end
 
     def description
-      raise NotImplementedError.new("Subclasses must implement #{__method__}")
+      @config["description"]
     end
 
     def setup
 
     end
 
-    def assertion
+    #array of SUnit::Assertion
+    def set_assertions
       raise NotImplementedError.new("Subclasses must implement #{__method__}")
     end
 
     def teardown
 
-    end
-
-    def retry_count
-      0
     end
   end
 end

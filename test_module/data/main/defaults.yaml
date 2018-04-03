@@ -1,0 +1,3 @@
+---
+test_module::globals::ensure: "installed"
+test_module::globals::sample_content: "Hello World!"

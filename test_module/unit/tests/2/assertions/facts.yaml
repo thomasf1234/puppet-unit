@@ -1,0 +1,3 @@
+---
+myfirstfacts::foo1: "bar1"
+mysecondfacts::foo2: "bar2"

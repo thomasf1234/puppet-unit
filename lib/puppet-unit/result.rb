@@ -1,4 +1,4 @@
-module SUnit
+module PuppetUnit
   class Result
     module States
       PENDING = "PENDING"
