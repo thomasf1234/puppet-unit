@@ -19,7 +19,7 @@ module PuppetUnit
       end
 
       def example?
-        @containment_path.include?("Puppet_Unit::Example")
+        @containment_path.include?("Puppet_unit::Example")
       end
     end
   end

@@ -20,16 +20,17 @@ module PuppetUnit
       @config = YAML.load_file(@conf_file)
 
       @libvirt_client = PuppetUnit::LibvirtClient.new(PuppetUnit::Config.instance.get("libvirt"))
+      @provisioner = PuppetUnit::Provisioner.new(@libvirt_client.domain_ip)
     end
 
 
     def setup
       modulepath = File.dirname(Dir.pwd)
-      require 'pry'; binding.pry
       @libvirt_client.restore_snapshot
-      system("sudo puppet apply --debug --modulepath #{modulepath} #{@setup_dir} > puppet_run.log 2>&1")
-      system("puppet apply --noop --lastrunreport lastrunreport.yaml #{@assertions_dir}/resources.pp > puppet_noop.log 2>&1")
-      @facts = to_facts(PuppetUnit::Util.flat_hash(JSON.parse(`puppet facts --basemodulepath #{modulepath}`)["values"]))
+      @provisioner.init
+      @provisioner.apply(@setup_dir)
+      @provisioner.assert(File.join(@assertions_dir, "resources.pp"))
+      @facts = to_facts(PuppetUnit::Util.flat_hash(@provisioner.facts["values"]))
     end
 
     def set_assertions
@@ -41,7 +42,7 @@ module PuppetUnit
 
     def set_resource_assertions
       lastrunresources.each do |resource|
-        assertion = PuppetUnit::Puppet::ResourceAssertion.new(resource)
+        assertion = PuppetUnit::ResourceAssertion.new(resource)
         @assertions << assertion
       end
     end
@@ -51,7 +52,7 @@ module PuppetUnit
       if File.exist?(expected_facts_path)
         expected_facts = to_facts(YAML.load_file(expected_facts_path))
         expected_facts.each do |expected_fact|
-          @assertions << PuppetUnit::Puppet::FactAssertion.new(expected_fact, @facts)
+          @assertions << PuppetUnit::FactAssertion.new(expected_fact, @facts)
         end
       end
     end
@@ -62,7 +63,7 @@ module PuppetUnit
       end
     end
 
-    def lastrunresources(lastrunreport_path="lastrunreport.yaml")
+    def lastrunresources(lastrunreport_path="tmp/lastrunreport.yaml")
       if File.exist?(lastrunreport_path)
         yamltext = File.read(lastrunreport_path)
         yamltext.sub!(/^--- \!.*$/,'---')

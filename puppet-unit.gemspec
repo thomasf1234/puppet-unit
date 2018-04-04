@@ -31,4 +31,6 @@ Gem::Specification.new do |spec|
   spec.add_development_dependency "bundler", "~> 1.16"
 
   spec.add_runtime_dependency "ruby-libvirt"
+  spec.add_runtime_dependency "net-ssh"
+  spec.add_runtime_dependency "net-scp"
 end

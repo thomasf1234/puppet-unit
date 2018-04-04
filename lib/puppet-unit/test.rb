@@ -83,7 +83,7 @@ module PuppetUnit
 
     end
 
-    #array of SUnit::Assertion
+    #array of PuppetUnit::Assertion
     def set_assertions
       raise NotImplementedError.new("Subclasses must implement #{__method__}")
     end
