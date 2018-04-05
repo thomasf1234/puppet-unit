@@ -1,6 +1,7 @@
 require "puppet-unit/version"
 require "puppet-unit/util"
 require "puppet-unit/config"
+require "puppet-unit/singletons/resource"
 require "puppet-unit/libvirt_client"
 require "puppet-unit/provisioner"
 require "puppet-unit/result"
@@ -16,4 +17,7 @@ require "puppet-unit/tests/module_test"
 
 module PuppetUnit
   # Your code goes here...
+  def self.root
+    File.dirname(__dir__)
+  end
 end
