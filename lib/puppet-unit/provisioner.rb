@@ -1,6 +1,7 @@
 require 'net/ssh'
 require 'net/scp'
 require 'json'
+require 'fileutils'
 
 module PuppetUnit
   class Provisioner
@@ -11,7 +12,7 @@ module PuppetUnit
 
     def init
       ssh do |session|
-        puts "removing /etc/puppetlabs"
+        refresh_tmp
         session.exec!("sudo rm -rf /etc/puppetlabs")
         session.exec!("sudo mkdir -p /etc/puppetlabs && sudo chown deploy:deploy -R /etc/puppetlabs")
         session.exec!("mkdir -p /etc/puppetlabs/code/environments /etc/puppetlabs/code/modules")
@@ -29,17 +30,18 @@ module PuppetUnit
       ssh do |session|
         session.scp.upload!(setup_dir, "/etc/puppetlabs/code/environments/",  :recursive => true)
         session.exec!("mv /etc/puppetlabs/code/environments/setup /etc/puppetlabs/code/environments/test")
-        session.exec!("sudo puppet apply --environment test --debug --modulepath /etc/puppetlabs/code/modules /etc/puppetlabs/code/environments/test")
+        puppet_log = session.exec!("sudo puppet apply --environment test --debug --modulepath /etc/puppetlabs/code/modules /etc/puppetlabs/code/environments/test")
+        File.open("tmp/lastrunapply.log", "w") { |file| file.write(puppet_log) }
       end
     end
 
     def assert(resources_manifest)
       ssh do |session|
         File.delete("tmp/lastrunreport.yaml") if File.directory?("tmp") & File.exist?("tmp/lastrunreport.yaml")
-        Dir.mkdir("tmp") unless File.directory?("tmp")
         session.scp.upload!(resources_manifest, "/tmp")
         session.exec!("sudo rm -f /tmp/lastrunreport.yaml")
-        session.exec!("sudo puppet apply --environment test --debug --noop --lastrunreport /tmp/lastrunreport.yaml --modulepath /etc/puppetlabs/code/modules /tmp/resources.pp")
+        noop_log = session.exec!("sudo puppet apply --environment test --debug --noop --lastrunreport /tmp/lastrunreport.yaml --modulepath /etc/puppetlabs/code/modules /tmp/resources.pp")
+        File.open("tmp/lastrunnoop.log", "w") { |file| file.write(noop_log) }
         session.exec!("sudo chown deploy:deploy /tmp/lastrunreport.yaml")
         session.scp.download!("/tmp/lastrunreport.yaml", "tmp/")
       end
@@ -52,6 +54,13 @@ module PuppetUnit
     end
 
     private
+    def refresh_tmp
+      if File.directory?("tmp")
+        FileUtils.remove_dir("tmp")
+      end
+      Dir.mkdir("tmp")
+    end
+
     def module_dependencies
       if File.exist?("metadata.json")
         metadata_json = JSON.parse(File.read("metadata.json"))
