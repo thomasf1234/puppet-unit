@@ -8,15 +8,19 @@ $:.unshift(".")
 #load all tests
 require "puppet-unit/helper.rb" if File.exist?("puppet-unit/helper.rb")
 
-tests = []
-test_dirs = ARGV[0] ? [ARGV[0]] : Dir[File.join("puppet-unit", "tests", "*")]
+module_tests = []
+module_test_dirs = ARGV[0] ? [ARGV[0]] : Dir[File.join("puppet-unit", "tests", "*")]
 
-test_dirs.each do |test_dir|
-  tests << PuppetUnit::ModuleTest.new(test_dir)
+module_test_dirs.each do |module_test_dir|
+  if File.directory?(module_test_dir)
+    PuppetUnit::Services::LogService.instance.debug("Loading test under #{module_test_dir}")
+    module_tests << PuppetUnit::ModuleTest.new(module_test_dir)
+  end
 end
 
 #run tests
-test_runner = PuppetUnit::TestRunner.new(tests)
+test_runner = PuppetUnit::TestRunner.new(module_tests)
+PuppetUnit::Services::LogService.instance.debug("Running tests")
 test_runner.run
 
-exit(1) unless tests.all?(&:passed?)
+exit(1) unless module_tests.all?(&:passed?)

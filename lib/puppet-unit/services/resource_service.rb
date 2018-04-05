@@ -1,13 +1,14 @@
 require "singleton"
 
 module PuppetUnit
-  module Singletons
-    class Resource
+  module Services
+    class ResourceService
+      RESOURCES_DIR = "resources"
       include Singleton
 
       #returns File
       def get(resource_filename)
-        resource_filepath = File.join(PuppetUnit.root, "resources", resource_filename)
+        resource_filepath = File.join(PuppetUnit.root, RESOURCES_DIR, resource_filename)
 
         if File.exist?(resource_filepath) && File.file?(resource_filepath)
           File.new(resource_filepath, "r")

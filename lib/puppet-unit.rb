@@ -1,8 +1,11 @@
 require "puppet-unit/version"
 require "puppet-unit/util"
-require "puppet-unit/config"
-require "puppet-unit/singletons/resource"
-require "puppet-unit/libvirt_client"
+
+require "puppet-unit/services/log_service"
+require "puppet-unit/services/config_service"
+require "puppet-unit/services/resource_service"
+require "puppet-unit/services/libvirt_service"
+
 require "puppet-unit/provisioner"
 require "puppet-unit/result"
 require "puppet-unit/assertion"

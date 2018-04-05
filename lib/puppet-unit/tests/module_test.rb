@@ -18,13 +18,11 @@ module PuppetUnit
       @conf_file = File.join(@test_dir, "config.yaml")
       raise "#{@conf_file} not a directory" unless File.exist?(@conf_file)
       @config = YAML.load_file(@conf_file)
-
-      @libvirt_client = PuppetUnit::LibvirtClient.new(PuppetUnit::Config.instance.get("libvirt"))
-      @provisioner = PuppetUnit::Provisioner.new(@libvirt_client.domain_ip)
     end
 
 
     def setup
+      @provisioner = PuppetUnit::Provisioner.new(@libvirt_client.domain_ip)
       modulepath = File.dirname(Dir.pwd)
       @libvirt_client.restore_snapshot
       @provisioner.init
