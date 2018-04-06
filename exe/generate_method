@@ -1,0 +1,151 @@
+#!/usr/bin/env ruby
+
+# signatures = YAML.load("signatures.yaml")
+
+
+class MethodDocumentGenerator
+  attr_reader :params
+
+  def initialize(params)
+    set_defaults(params)
+    validate(params)
+    @params = params
+  end
+
+  def set_defaults(params)
+    params["args"] ||= []
+    params["return"] ||= []
+    params["exception"] ||= []
+    params["examples"] ||= []
+    params["deprecated"] ||= false
+    params["see"] ||= []
+  end
+
+  def validate(params)
+    validate_keys(params, ["class", "method_type", "name", "author", "description"])
+    raise "Invalid method_type #{params["method_type"]}" unless ["instance", "class"].include?(params["method_type"])
+
+    params["args"].each do |hash|
+      validate_keys(hash, ["name", "type", "description"])
+    end
+
+    params["return"].each do |hash|
+      validate_keys(hash, ["type", "description"])
+    end
+
+    params["exception"].each do |hash|
+      validate_keys(hash, ["type", "reason"])
+    end
+  end
+
+  # https://github.com/wbailey/command_line_reporter
+
+  #  If there is an existing lockfile at the path specified, but this is a really
+  #  long description to test ok I hope this doesn't stop the formatter from If
+  #  there is an existing lockfile at the path specified, but this is a really long
+  #  description to test ok I hope this doesn't stop the formatter from If there is
+  #  an existing lockfile at the path specified, but this is a really long
+  #  description to test ok I hope this doesn't stop the formatter from my
+  #  description my description my description my description my description my
+  #  description my description
+  #
+  #  @author thomasf1234
+  #  @arg1 [PuppetUnit::Lock] lock to serialize to file
+  #  @arg2 [String] file path to write lockfile
+  #  @return1 [Integer] the number of bytes written to file
+  #  @exception [PuppetUnit::Exception::LockfileExists] If there is an existing
+  #  lockfile at the path specified, but this is a really
+  #  long description to test ok I hope this doesn't stop the formatter from
+  #  printing correctly
+  #  @see some reference or url
+  #  @since commit reference
+  #  @deprecated
+  def generate
+    doc = []
+
+    doc << @params["description"]
+    doc << $/
+
+    doc << "@author #{@params["author"]}"
+    doc << "@version #{@params["version"]}" if @params.has_key?("version")
+    @params["args"].each_with_index do |hash, index|
+      doc << "@arg#{index+1} [#{hash["type"]}] #{hash["description"]}"
+    end
+    @params["return"].each_with_index do |hash, index|
+      doc << "@return#{index+1} [#{hash["type"]}] #{hash["description"]}"
+    end
+
+    @params["exception"].each do |hash|
+      doc << "@exception [#{hash["type"]}] #{wrap(hash["reason"])}"
+    end
+    doc << "@see #{@params["see"]}" if @params.has_key?("see")
+    doc << "@since #{@params["since"]}" if @params.has_key?("since")
+    doc << "@deprecated" unless @params["deprecated"] == true
+
+    raw = doc.join($/)
+    wrap(raw, 2, 78, "#")
+  end
+
+  private
+  def validate_keys(hash, keys)
+    raise "must be a hash" unless hash.kind_of?(Hash)
+    keys.each do |key|
+      raise "entries must include key '#{key}'" unless hash.has_key?(key)
+    end
+  end
+
+  def wrap(string, indent=0, width=78, prefix="")
+    indentation = " " * indent
+    string.gsub(/(.{1,#{width}})(\s+|\Z)/, "#{prefix+indentation}\\1#{$/}")
+  end
+end
+
+
+
+
+
+method_doc_params = {
+    "class" => "PuppetUnit::Services::LockfileService",
+    "method_type" => "instance", #"(or class)",
+    "name" => "write",
+    "args" => [
+        {"name" => "lock", "type" => "PuppetUnit::Lock", "description" => "lock to serialize to file"},
+        {"name" => "lockfile_path", "type" => "String", "description" => "file path to write lockfile"}
+    ],
+    "return" => [
+        { "type" => "Integer", "description" => "the number of bytes written to file"}
+    ],
+    "exception" => [
+        {
+            "type" => "PuppetUnit::Exception::LockfileExists",
+            "reason" => "If there is an existing lockfile at the path specified, but this is a really long description to test ok I hope this doesn't stop the formatter from printing correctly"
+        }
+    ],
+    "description" => "If there is an existing lockfile at the path specified, but this is a really long description to test ok I hope this doesn't stop the formatter from If there is an existing lockfile at the path specified, but this is a really long description to test ok I hope this doesn't stop the formatter from If there is an existing lockfile at the path specified, but this is a really long description to test ok I hope this doesn't stop the formatter from my description my description my description my description my description my description my description ",
+    "examples" => [
+
+    ] ,
+    "author" => "thomasf1234",
+    "since"  => "commit reference",
+    "see" => "some reference or url",
+}
+
+puts MethodDocumentGenerator.new(method_doc_params).generate
+=begin
+
+    @author (classes and interfaces only, required)
+    @version (classes and interfaces only, required. See footnote 1)
+    @param (methods and constructors only)
+    @return (methods only)
+    @exception (@throws is a synonym added in Javadoc 1.2)
+    @see
+    @since
+    @serial (or @serialField or @serialData)
+    @deprecated (see How and When To Deprecate APIs)
+
+=end
+# http://www.oracle.com/technetwork/java/javase/tech/index-137868.html
+#returns number of bytes written
+# @param [PuppetUnit::Lock]  lock to serialize to file
+# @param [String]            file path to write lockfile
+# @return [Integer] the number of bytes written to file
