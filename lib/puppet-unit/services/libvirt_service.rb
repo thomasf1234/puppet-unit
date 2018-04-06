@@ -1,13 +1,14 @@
 require "singleton"
 require "libvirt"
 require "puppet-unit/services/config_service"
+require "puppet-unit/libvirt/snapshot_builder"
 
 module PuppetUnit
   module Services
     class LibvirtService
       include Singleton
 
-      def get_domain_ip(domain_name, network_name="default")
+      def domain_ip(domain_name, network_name="default")
         connect do |connection|
           network = connection.lookup_network_by_name(network_name)
           entry = network.dhcp_leases.detect {|entry| entry["hostname"] == domain_name}
