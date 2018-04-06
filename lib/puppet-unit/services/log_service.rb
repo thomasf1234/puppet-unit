@@ -26,6 +26,10 @@ module PuppetUnit
         @logger.debug(message)
       end
 
+      def raw(message)
+        STDOUT.puts(message)
+      end
+
       private
       def initialize
         @logging_level = ENV.has_key?("LOG_LEVEL") ? ENV["LOG_LEVEL"].to_i : 1

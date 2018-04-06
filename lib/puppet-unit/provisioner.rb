@@ -12,7 +12,6 @@ module PuppetUnit
 
     def init
       ssh do |session|
-        refresh_tmp
         session.exec!("sudo rm -rf /etc/puppetlabs")
         session.exec!("sudo mkdir -p /etc/puppetlabs && sudo chown deploy:deploy -R /etc/puppetlabs")
         session.exec!("mkdir -p /etc/puppetlabs/code/environments /etc/puppetlabs/code/modules")
@@ -54,13 +53,6 @@ module PuppetUnit
     end
 
     private
-    def refresh_tmp
-      if File.directory?("tmp")
-        FileUtils.remove_dir("tmp")
-      end
-      Dir.mkdir("tmp")
-    end
-
     def module_dependencies
       if File.exist?("metadata.json")
         metadata_json = JSON.parse(File.read("metadata.json"))

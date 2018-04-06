@@ -3,9 +3,10 @@ require 'json'
 
 module PuppetUnit
   class ModuleTest < PuppetUnit::Test
-    def initialize(test_dir)
+    def initialize(test_dir, domain_name)
       super()
       @test_dir = test_dir
+      @domain_name = domain_name
 
       raise "#{@test_dir} not a directory" unless File.directory?(@test_dir)
 
@@ -16,19 +17,31 @@ module PuppetUnit
       raise "#{@assertions_dir} not a directory" unless File.directory?(@assertions_dir)
 
       @conf_file = File.join(@test_dir, "config.yaml")
-      raise "#{@conf_file} not a directory" unless File.exist?(@conf_file)
+      raise "#{@conf_file} not a file" unless File.file?(@conf_file)
       @config = YAML.load_file(@conf_file)
     end
 
 
     def setup
-      @provisioner = PuppetUnit::Provisioner.new(@libvirt_client.domain_ip)
-      modulepath = File.dirname(Dir.pwd)
-      @libvirt_client.restore_snapshot
-      @provisioner.init
-      @provisioner.apply(@setup_dir)
-      @provisioner.assert(File.join(@assertions_dir, "resources.pp"))
-      @facts = to_facts(PuppetUnit::Util.flat_hash(@provisioner.facts["values"]))
+      PuppetUnit::Services::LogService.instance.debug("Refreshing tmp directory")
+      refresh_tmp
+
+
+
+      PuppetUnit::Services::LogService.instance.debug("Restoring domain snapshot #{@domain_name}")
+      PuppetUnit::Services::LibvirtService.instance.restore_snapshot(@domain_name)
+
+      PuppetUnit::Services::LogService.instance.debug("Looking up domain ip address")
+      domain_ip = PuppetUnit::Services::LibvirtService.instance.domain_ip(@domain_name)
+
+      identify_file = PuppetUnit::Services::ConfigService.get("libvirt")["identity_file"]
+      provisioner = PuppetUnit::Provisioner.new(domain_ip, identify_file)
+
+
+      provisioner.init
+      provisioner.apply(@setup_dir)
+      provisioner.assert(File.join(@assertions_dir, "resources.pp"))
+      @facts = to_facts(PuppetUnit::Util.flat_hash(provisioner.facts["values"]))
     end
 
     def set_assertions
@@ -37,6 +50,12 @@ module PuppetUnit
     end
 
     private
+    def refresh_tmp
+      if File.directory?("tmp")
+        FileUtils.remove_dir("tmp")
+      end
+      Dir.mkdir("tmp")
+    end
 
     def set_resource_assertions
       lastrunresources.each do |resource|

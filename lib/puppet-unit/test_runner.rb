@@ -27,8 +27,8 @@ module PuppetUnit
         tests = order(@tests)
         tests.each_with_index do |test, index|
           test_number = index + 1
-          puts format("#{test_number}) #{test.class.name}", :bold)
-          puts format("   Description: #{test.description}", :bold)
+          PuppetUnit::Services::LogService.instance.raw(format("#{test_number}) #{test.class.name}", :bold))
+          PuppetUnit::Services::LogService.instance.raw(format("   Description: #{test.description}", :bold))
 
           if test.skip?
             skip(test)
@@ -109,7 +109,7 @@ module PuppetUnit
     end
 
     def order(tests)
-      case PuppetUnit::Config.instance.get("order")
+      case PuppetUnit::Services::ConfigService.instance.get("order")
         when "rand"
           tests.shuffle
         else
