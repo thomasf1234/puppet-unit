@@ -6,6 +6,14 @@ module PuppetUnit
     class LogService
       include Singleton
 
+      def self.finalize(id)
+        instance.close_file
+      end
+
+      def close_file
+        @logger.close
+      end
+
       def fatal(message)
         @logger.fatal(message)
       end
@@ -32,6 +40,7 @@ module PuppetUnit
 
       private
       def initialize
+        ObjectSpace.define_finalizer(self, self.class.method(:finalize).to_proc)
         @logging_level = ENV.has_key?("LOG_LEVEL") ? ENV["LOG_LEVEL"].to_i : 1
         @logger = Logger.new(STDOUT)
         @logger.level = @logging_level
