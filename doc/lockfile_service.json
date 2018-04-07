@@ -1,0 +1,16 @@
+{
+  "methods":[
+    {
+      "name":"get",
+      "return":
+      [
+        {"type":"PuppetUnit::Lock", "description":"a new lock object that expires in 5 hours"}
+      ],
+      "description":
+      [
+        "Calling the method to acquire a new lock with","a random uuid that will has an expiration date of 5 hours"
+      ],
+      "author":"thomasf1234"
+    }
+  ]
+}

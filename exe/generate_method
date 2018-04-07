@@ -3,6 +3,7 @@
 # signatures = YAML.load("signatures.yaml")
 
 require "matrix"
+require "json"
 
 class Table
   def initialize(column_separator="|")
@@ -218,16 +219,14 @@ end
 #     "see" => ["some reference or url"]
 # }
 
-# @return [PuppetUnit::Lock] a new lock object that expires in 5 hours
 
-method_doc_params = {
-    "name" => "get",
-    "return" => [
-        { "type" => "PuppetUnit::Lock", "description" => "a new lock object that expires in 5 hours"}
-    ],
-    "description" => ["Calling the method to acquire a new lock with",
-                      "a random uuid that will has an expiration date of 5 hours"],
-    "author" => "thomasf1234",
-}
+method_doc_params_array = JSON.parse(File.read(ARGV[0]))["methods"]
 
-puts MethodDocumentationGenerator.new(method_doc_params).generate
+method_doc_params_array.each do |method_doc_params|
+  puts "METHOD #{method_doc_params["name"]}"
+  puts MethodDocumentationGenerator.new(method_doc_params).generate
+  puts ""
+  puts ""
+end
+
+
