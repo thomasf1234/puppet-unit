@@ -2,8 +2,57 @@
 
 # signatures = YAML.load("signatures.yaml")
 
+require "matrix"
 
-class MethodDocumentGenerator
+class Table
+  def initialize(column_separator="|")
+    @rows = []
+    @column_separator = column_separator
+  end
+
+  def add_row(row)
+    @rows << row
+  end
+
+  def to_lines
+    max_row_size = @rows.map(&:size).max
+
+    _rows = []
+
+    #expand each row as necessary
+    @rows.each do |row|
+      _row = row + Array.new((max_row_size - row.size), "")
+      _rows << _row
+    end
+
+    tmatrix = Matrix[*_rows]
+    new_columns = []
+    tmatrix.column_count.times do |i|
+      column = tmatrix.column(i)
+      max_column_size = column.map(&:size).max
+
+      _new_column = []
+      column.to_a.each do |column_value|
+        _new_column << pad(column_value, max_column_size)
+      end
+
+      new_columns << _new_column
+    end
+
+    t2matrix = Matrix[*new_columns].transpose
+
+    t2matrix.to_a.map do |row|
+      row.join(@column_separator)
+    end
+  end
+
+  private
+  def pad(string, size)
+    string.ljust(size, " ")
+  end
+end
+
+class MethodDocumentationGenerator
   attr_reader :params
 
   def initialize(params)
@@ -22,8 +71,7 @@ class MethodDocumentGenerator
   end
 
   def validate(params)
-    validate_keys(params, ["class", "method_type", "name", "author", "description"])
-    raise "Invalid method_type #{params["method_type"]}" unless ["instance", "class"].include?(params["method_type"])
+    validate_keys(params, ["name", "author", "description"])
 
     params["args"].each do |hash|
       validate_keys(hash, ["name", "type", "description"])
@@ -36,67 +84,100 @@ class MethodDocumentGenerator
     params["exception"].each do |hash|
       validate_keys(hash, ["type", "reason"])
     end
+
+    raise ArgumentError.new("see must be an array of references") unless params["see"].kind_of?(Array)
   end
 
-  # https://github.com/wbailey/command_line_reporter
-
-  #  If there is an existing lockfile at the path specified, but this is a really
-  #  long description to test ok I hope this doesn't stop the formatter from If
-  #  there is an existing lockfile at the path specified, but this is a really long
-  #  description to test ok I hope this doesn't stop the formatter from If there is
-  #  an existing lockfile at the path specified, but this is a really long
-  #  description to test ok I hope this doesn't stop the formatter from my
-  #  description my description my description my description my description my
-  #  description my description
-  #
-  #  @author thomasf1234
-  #  @arg1 [PuppetUnit::Lock] lock to serialize to file
-  #  @arg2 [String] file path to write lockfile
-  #  @return1 [Integer] the number of bytes written to file
-  #  @exception [PuppetUnit::Exception::LockfileExists] If there is an existing
-  #  lockfile at the path specified, but this is a really
-  #  long description to test ok I hope this doesn't stop the formatter from
-  #  printing correctly
-  #  @see some reference or url
-  #  @since commit reference
-  #  @deprecated
   def generate
     doc = []
 
-    doc << @params["description"]
-    doc << $/
+    doc << "==== Description"
+    doc << ""
+    doc << wrap(format_description(@params["description"]))
+    doc << ""
 
-    doc << "@author #{@params["author"]}"
-    doc << "@version #{@params["version"]}" if @params.has_key?("version")
-    @params["args"].each_with_index do |hash, index|
-      doc << "@arg#{index+1} [#{hash["type"]}] #{hash["description"]}"
-    end
-    @params["return"].each_with_index do |hash, index|
-      doc << "@return#{index+1} [#{hash["type"]}] #{hash["description"]}"
+    if !@params["examples"].empty?
+      doc << "==== Examples"
+      doc << ""
+
+      @params["examples"].each do |example|
+        doc << example
+      end
+      doc << ""
     end
 
-    @params["exception"].each do |hash|
-      doc << "@exception [#{hash["type"]}] #{wrap(hash["reason"])}"
-    end
-    doc << "@see #{@params["see"]}" if @params.has_key?("see")
-    doc << "@since #{@params["since"]}" if @params.has_key?("since")
-    doc << "@deprecated" unless @params["deprecated"] == true
+    doc << "==== Signature"
+    doc << ""
+
+    signature_table_lines = signature_table.to_lines.map(&:strip)
+    doc += signature_table_lines
 
     raw = doc.join($/)
-    wrap(raw, 2, 78, "#")
+    comment(raw)
   end
 
   private
   def validate_keys(hash, keys)
-    raise "must be a hash" unless hash.kind_of?(Hash)
+    raise ArgumentError.new("must be a hash") unless hash.kind_of?(Hash)
     keys.each do |key|
-      raise "entries must include key '#{key}'" unless hash.has_key?(key)
+      raise ArgumentError.new("entries must include key '#{key}'") unless hash.has_key?(key)
     end
+  end
+
+  def format_description(description)
+    desc = description
+
+    if description.kind_of?(Array)
+      desc = description.map(&:strip).join(" ")
+    end
+
+    desc
+  end
+
+  def signature_table
+    rows = []
+    rows << ["@author", @params["author"]]
+    rows << ["@version", @params["version"]] if @params.has_key?("version")
+    @params["args"].each_with_index do |hash, index|
+      rows << ["@arg#{index+1}", "[#{hash["type"]}]", format_description(hash["description"])]
+    end
+
+    if @params["return"].one?
+      hash = @params["return"].first
+      rows << ["@return", "[#{hash["type"]}]", format_description(hash["description"])]
+    else
+      @params["return"].each_with_index do |hash, index|
+        rows << ["@return#{index+1}", "[#{hash["type"]}]", format_description(hash["description"])]
+      end
+    end
+
+    @params["exception"].each do |hash|
+      rows << ["@exception", "[#{hash["type"]}]", format_description(hash["reason"])]
+    end
+
+    @params["see"].each do |reference|
+      rows << ["@see", reference]
+    end
+
+    rows << ["@since", @params["since"]] if @params.has_key?("since")
+    rows << ["@deprecated"] if @params["deprecated"] == true
+
+    table = Table.new(" ")
+
+    rows.each do |row|
+      table.add_row(row)
+    end
+
+    table
+  end
+
+  def comment(raw)
+    raw.lines.map {|line| line.insert(0, "# ")}.join
   end
 
   def wrap(string, indent=0, width=78, prefix="")
     indentation = " " * indent
-    string.gsub(/(.{1,#{width}})(\s+|\Z)/, "#{prefix+indentation}\\1#{$/}")
+    string.gsub(/(.{1,#{width}})(\s+|\Z)/, "#{prefix+indentation}\\1#{$/}").strip
   end
 end
 
@@ -104,48 +185,49 @@ end
 
 
 
-method_doc_params = {
-    "class" => "PuppetUnit::Services::LockfileService",
-    "method_type" => "instance", #"(or class)",
-    "name" => "write",
-    "args" => [
-        {"name" => "lock", "type" => "PuppetUnit::Lock", "description" => "lock to serialize to file"},
-        {"name" => "lockfile_path", "type" => "String", "description" => "file path to write lockfile"}
-    ],
-    "return" => [
-        { "type" => "Integer", "description" => "the number of bytes written to file"}
-    ],
-    "exception" => [
-        {
-            "type" => "PuppetUnit::Exception::LockfileExists",
-            "reason" => "If there is an existing lockfile at the path specified, but this is a really long description to test ok I hope this doesn't stop the formatter from printing correctly"
-        }
-    ],
-    "description" => "If there is an existing lockfile at the path specified, but this is a really long description to test ok I hope this doesn't stop the formatter from If there is an existing lockfile at the path specified, but this is a really long description to test ok I hope this doesn't stop the formatter from If there is an existing lockfile at the path specified, but this is a really long description to test ok I hope this doesn't stop the formatter from my description my description my description my description my description my description my description ",
-    "examples" => [
+# method_doc_params = {
+#     "name" => "write",
+#     "args" => [
+#         {"name" => "lock", "type" => "PuppetUnit::Lock", "description" => "lock to serialize to file"},
+#         {"name" => "lockfile_path", "type" => "String", "description" => "file path to write lockfile"}
+#     ],
+#     "return" => [
+#         { "type" => "Integer", "description" => "the number of bytes written to file"}
+#     ],
+#     "exception" => [
+#         {
+#             "type" => "PuppetUnit::Exception::LockfileExists",
+#             "reason" => "If there is an existing lockfile at the path specified, but this is a really long description to test ok I hope this doesn't stop the formatter from printing correctly"
+#         }
+#     ],
+#     "description" => ["If there is an existing lockfile at the path specified,",
+#                       "but this is a really long description to test ok I hope this ",
+#                       "doesn't stop the formatter from If there is an existing lockfile ",
+#                       "at the path specified, but this is a really long description to",
+#                       "test ok I hope this doesn't stop the formatter from If there",
+#                       "is an existing lockfile at the path specified, but this is",
+#                       "a really long description to test ok I hope this doesn't stop",
+#                       "the formatter from my description my description my description",
+#                       " my description my description my description my description "
+#     ],
+#     "examples" => [
+#
+#     ] ,
+#     "author" => "thomasf1234",
+#     "since"  => "commit reference",
+#     "see" => ["some reference or url"]
+# }
 
-    ] ,
+# @return [PuppetUnit::Lock] a new lock object that expires in 5 hours
+
+method_doc_params = {
+    "name" => "get",
+    "return" => [
+        { "type" => "PuppetUnit::Lock", "description" => "a new lock object that expires in 5 hours"}
+    ],
+    "description" => ["Calling the method to acquire a new lock with",
+                      "a random uuid that will has an expiration date of 5 hours"],
     "author" => "thomasf1234",
-    "since"  => "commit reference",
-    "see" => "some reference or url",
 }
 
-puts MethodDocumentGenerator.new(method_doc_params).generate
-=begin
-
-    @author (classes and interfaces only, required)
-    @version (classes and interfaces only, required. See footnote 1)
-    @param (methods and constructors only)
-    @return (methods only)
-    @exception (@throws is a synonym added in Javadoc 1.2)
-    @see
-    @since
-    @serial (or @serialField or @serialData)
-    @deprecated (see How and When To Deprecate APIs)
-
-=end
-# http://www.oracle.com/technetwork/java/javase/tech/index-137868.html
-#returns number of bytes written
-# @param [PuppetUnit::Lock]  lock to serialize to file
-# @param [String]            file path to write lockfile
-# @return [Integer] the number of bytes written to file
+puts MethodDocumentationGenerator.new(method_doc_params).generate
