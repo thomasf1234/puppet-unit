@@ -1,0 +1,88 @@
+{
+  "methods":[
+    {
+      "name":"initialize",
+      "description":
+      [
+        "class constructor"
+      ],
+      "args":
+      [
+        {"name":"uuid", "type":"String", "description":"a uuid"},
+        {"name":"expires_at_unix_timestamp", "type":"Integer", "description":"expiry time of the lock as a unix timestamp"}
+      ],
+      "author":"thomasf1234"
+    },
+
+    {
+      "name":"uuid",
+      "description":
+      [
+        "the uuid assigned during initialization"
+      ],
+      "return":
+      [
+        {"type":"String", "description":"the uuid assigned"}
+      ],
+      "author":"thomasf1234",
+      "see": [
+        "PuppetUnit::Lock#initialize"
+      ]
+    },
+
+    {
+      "name":"expires_at_unix_timestamp",
+      "description":
+      [
+        "the unix timestamp representing the lock expiry time, assigned during initialization"
+      ],
+      "return":
+      [
+        {"type":"Integer", "description":"expiry time as unix timestamp"}
+      ],
+      "author":"thomasf1234",
+      "see": [
+        "PuppetUnit::Lock#initialize"
+      ]
+    },
+
+    {
+      "name":"expires_at",
+      "description":
+      [
+        "the time that the lock expires in 'Time' format"
+      ],
+      "return":
+      [
+        {"type":"Time", "description":"the expiry time"}
+      ],
+      "author":"thomasf1234"
+    },
+
+    {
+      "name":"active?",
+      "description":
+      [
+        "if the lock is still active"
+      ],
+      "return":
+      [
+        {"type":"Boolean", "description":"true if the lock has not yet expired, false otherwise"}
+      ],
+      "author":"thomasf1234"
+    },
+
+    {
+      "name":"expired?",
+      "description":
+      [
+        "if the lock has expired"
+      ],
+      "return":
+      [
+        {"type":"Boolean", "description":"true if the lock has expired, false otherwise"}
+      ],
+      "author":"thomasf1234"
+    }
+  ]
+}
