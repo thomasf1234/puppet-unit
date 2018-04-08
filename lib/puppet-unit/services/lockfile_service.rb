@@ -11,16 +11,31 @@ module PuppetUnit
       include Singleton
       include PuppetUnit::UnixTimestampUtils
 
+      # ==== Description
+      #
+      # Calling the method to acquire a new lock with a random uuid that will has an
+      # expiration date of 5 hours
+      #
+      # ==== Signature
+      #
+      # @author thomasf1234
       # @return [PuppetUnit::Lock] a new lock object that expires in 5 hours
       def get
         PuppetUnit::Lock.new(SecureRandom.uuid, future_unix_timestamp(5))
       end
 
 
-      #returns number of bytes written
-      # @param [PuppetUnit::Lock]  lock to serialize to file
-      # @param [String]            file path to write lockfile
-      # @return [Integer] the number of bytes written to file
+      # ==== Description
+      #
+      # Serializes and writes a Lock instance to a file in marshal format.
+      #
+      # ==== Signature
+      #
+      # @author thomasf1234
+      # @arg1   [PuppetUnit::Lock]  lock instance to serialize to file
+      # @arg2   [String]            file path to write lockfile
+      # @return [Integer]           number of bytes written to lockfile_path
+      # @see    LockfileService#get
       def write(lock, lockfile_path)
         if File.exist?(lockfile_path)
           raise(PuppetUnit::Exception::LockfileExists.new(lockfile_path))
@@ -33,8 +48,16 @@ module PuppetUnit
         end
       end
 
-      # @param [String] file path to lockfile
-      # @return [PuppetUnit::Lock] the lock object that was serialized at lockfile_path
+      # ==== Description
+      #
+      # Call to read a lockfile created using LockfileService#write
+      #
+      # ==== Signature
+      #
+      # @author thomasf1234
+      # @arg1   [String]              file path to the lockfile
+      # @return [PuppetUnit::Lock]    the lock object that was serialized at lockfile_path
+      # @see    LockfileService#write
       def read(lockfile_path)
         Marshal.load(File.binread(lockfile_path))
       end

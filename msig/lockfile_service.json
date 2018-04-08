@@ -1,0 +1,58 @@
+{
+  "methods":[
+    {
+      "name":"get",
+      "description":
+      [
+        "Calling the method to acquire a new lock with",
+        "a random uuid that will has an expiration date of 5 hours"
+      ],
+      "return":
+      [
+        {"type":"PuppetUnit::Lock", "description":"a new lock object that expires in 5 hours"}
+      ],
+      "author":"thomasf1234"
+    },
+
+    {
+      "name":"write",
+      "description":
+      [
+        "Serializes and writes a Lock instance to a file in marshal format."
+      ],
+      "args":
+      [
+        {"name": "lock", "type":"PuppetUnit::Lock", "description": "lock instance to serialize to file"},
+        {"name": "lockfile_path", "type":"String", "description": "file path to write lockfile"}
+      ],
+      "return":
+      [
+        {"type":"Integer", "description":"number of bytes written to lockfile_path"}
+      ],
+      "author":"thomasf1234",
+      "see":[
+        "LockfileService#get"
+      ]
+    },
+
+    {
+      "name":"read",
+      "description":
+      [
+        "Call to read a lockfile created using LockfileService#write"
+      ],
+      "args":
+      [
+        {"name": "lockfile_path", "type":"String", "description": "file path to the lockfile"}
+      ],
+      "return":
+      [
+        {"type":"PuppetUnit::Lock", "description":"the lock object that was serialized at lockfile_path"}
+      ],
+      "author":"thomasf1234",
+      "see":[
+        "LockfileService#write"
+      ]
+    }
+  ]
+}
