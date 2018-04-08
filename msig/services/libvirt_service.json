@@ -1,0 +1,60 @@
+{
+  "methods": [
+    {
+      "name": "domain_ip",
+      "description": [
+        "Returns the current IP address assigned to the provided domain name in the provided network"
+      ],
+      "args": [
+        {
+          "name": "domain_name",
+          "type": "String",
+          "description": "the domain to query"
+        },
+        {
+          "name": "network_name",
+          "type": "String",
+          "description": "the network to query"
+        }
+      ],
+      "return": [
+        {
+          "type": "String",
+          "description": "the IP address"
+        }
+      ],
+      "exception": [
+        {"type": "RuntimeError", "reason": "could not find an IP address"}
+      ],
+      "author": "thomasf1234"
+    },
+    {
+      "name": "restore_snapshot",
+      "description": [
+        "Restores the provided domain to the provided snapshot."
+      ],
+      "args": [
+        {
+          "name": "domain_name",
+          "type": "String",
+          "description": "the name of the domain to restore"
+        },
+        {
+          "name": "snapshot_name",
+          "type": "String",
+          "description": "the snapshot to restore"
+        }
+      ],
+      "return": [
+        {
+          "type": "TrueClass",
+          "description": "true"
+        }
+      ],
+      "exception":[
+        {"type":"Libvirt::Error", "reason": "error occurred restoring snapshot"}
+      ],
+      "author": "thomasf1234"
+    }
+  ]
+}

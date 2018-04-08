@@ -23,18 +23,18 @@ module PuppetUnit
         PuppetUnit::Lock.new(SecureRandom.uuid, future_unix_timestamp(5))
       end
 
-
       # ==== Description
       #
       # Serializes and writes a Lock instance to a file in marshal format.
       #
       # ==== Signature
       #
-      # @author thomasf1234
-      # @arg1   [PuppetUnit::Lock]  lock instance to serialize to file
-      # @arg2   [String]            file path to write lockfile
-      # @return [Integer]           number of bytes written to lockfile_path
-      # @see    LockfileService#get
+      # @author    thomasf1234
+      # @arg1      [PuppetUnit::Lock]                       lock instance to serialize to file
+      # @arg2      [String]                                 file path to write lockfile
+      # @return    [Integer]                                number of bytes written to lockfile_path
+      # @exception [PuppetUnit::Exceptions::LockfileExists] tried to write to an existing lockfile
+      # @see       LockfileService#get
       def write(lock, lockfile_path)
         if File.exist?(lockfile_path)
           raise(PuppetUnit::Exceptions::LockfileExists.new(lockfile_path))

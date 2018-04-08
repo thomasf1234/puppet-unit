@@ -29,6 +29,10 @@
       [
         {"type":"Integer", "description":"number of bytes written to lockfile_path"}
       ],
+      "exception":
+      [
+        {"type": "PuppetUnit::Exceptions::LockfileExists", "reason": "tried to write to an existing lockfile"}
+      ],
       "author":"thomasf1234",
       "see":[
         "LockfileService#get"
