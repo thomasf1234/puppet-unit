@@ -1,5 +1,6 @@
 module PuppetUnit
   module UnixTimestampUtils
+    ONE_HOUR_UNIX_TIMESTAMP = 60*60
     # @param [Integer] the number of hours
     # @return [Integer] the unix timestamp representing the current time at number_of_hours from now
     def future_unix_timestamp(number_of_hours)

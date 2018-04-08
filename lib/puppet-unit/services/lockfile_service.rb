@@ -7,8 +7,6 @@ require "puppet-unit/utils/unix_timestamp_utils"
 module PuppetUnit
   module Services
     class LockfileService
-      ONE_HOUR_UNIX_TIMESTAMP = 60*60
-
       include Singleton
       include PuppetUnit::UnixTimestampUtils
 
@@ -39,7 +37,7 @@ module PuppetUnit
       # @see    LockfileService#get
       def write(lock, lockfile_path)
         if File.exist?(lockfile_path)
-          raise(PuppetUnit::Exception::LockfileExists.new(lockfile_path))
+          raise(PuppetUnit::Exceptions::LockfileExists.new(lockfile_path))
         else
           serialized_lock = Marshal.dump(lock)
 

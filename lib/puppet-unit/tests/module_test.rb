@@ -1,5 +1,6 @@
 require 'yaml'
 require 'json'
+require "puppet-unit/util"
 
 module PuppetUnit
   class ModuleTest < PuppetUnit::Test
@@ -24,9 +25,7 @@ module PuppetUnit
 
     def setup
       PuppetUnit::Services::LogService.instance.debug("Refreshing tmp directory")
-      refresh_tmp
-
-
+      PuppetUnit::Util.refresh_tmp
 
       PuppetUnit::Services::LogService.instance.debug("Restoring domain snapshot #{@domain_name}")
       PuppetUnit::Services::LibvirtService.instance.restore_snapshot(@domain_name)
@@ -50,13 +49,6 @@ module PuppetUnit
     end
 
     private
-    def refresh_tmp
-      if File.directory?("tmp")
-        FileUtils.remove_dir("tmp")
-      end
-      Dir.mkdir("tmp")
-    end
-
     def set_resource_assertions
       lastrunresources.each do |resource|
         assertion = PuppetUnit::ResourceAssertion.new(resource)

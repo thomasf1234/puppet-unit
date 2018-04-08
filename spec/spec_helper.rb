@@ -13,4 +13,8 @@ RSpec.configure do |config|
   config.disable_monkey_patching!
 
   config.include SpecHelper::UnitHelpers
+
+  config.before(:each) do
+    PuppetUnit::Util.refresh_tmp
+  end
 end

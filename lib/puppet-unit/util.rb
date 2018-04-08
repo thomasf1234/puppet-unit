@@ -15,5 +15,14 @@ module PuppetUnit
 
       all
     end
+
+    def self.refresh_tmp
+      tmp_dir = "tmp"
+
+      if File.directory?(tmp_dir)
+        FileUtils.remove_dir(tmp_dir)
+      end
+      Dir.mkdir(tmp_dir)
+    end
   end
 end
