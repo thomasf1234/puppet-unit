@@ -4,6 +4,7 @@ require "puppet-unit/util"
 require "puppet-unit/services/log_service"
 require "puppet-unit/services/config_service"
 require "puppet-unit/services/resource_service"
+require "puppet-unit/services/lockfile_service"
 require "puppet-unit/services/libvirt_service"
 
 require "puppet-unit/provisioner"

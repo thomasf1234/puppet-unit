@@ -1,5 +1,6 @@
 require "singleton"
 require "securerandom"
+require "puppet-unit/lock"
 require "puppet-unit/exceptions/lockfile_exists"
 require "puppet-unit/utils/unix_timestamp_utils"
 
