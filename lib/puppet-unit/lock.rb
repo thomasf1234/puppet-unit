@@ -76,5 +76,9 @@ module PuppetUnit
     def expired?
       !active?
     end
+
+    def ==(other_lock)
+      @uuid == other_lock.uuid && @expires_at_unix_timestamp == other_lock.expires_at_unix_timestamp
+    end
   end
 end

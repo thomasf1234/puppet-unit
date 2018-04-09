@@ -20,6 +20,8 @@ module PuppetUnit
       @conf_file = File.join(@test_dir, "config.yaml")
       raise "#{@conf_file} not a file" unless File.file?(@conf_file)
       @config = YAML.load_file(@conf_file)
+
+      @provisioner = PuppetUnit::Provisioner.new(domain_name)
     end
 
 
@@ -27,25 +29,22 @@ module PuppetUnit
       PuppetUnit::Services::LogService.instance.debug("Refreshing tmp directory")
       PuppetUnit::Util.refresh_tmp
 
-      PuppetUnit::Services::LogService.instance.debug("Restoring domain snapshot #{@domain_name}")
-      PuppetUnit::Services::LibvirtService.instance.restore_snapshot(@domain_name)
-
-      PuppetUnit::Services::LogService.instance.debug("Looking up domain ip address")
-      domain_ip = PuppetUnit::Services::LibvirtService.instance.domain_ip(@domain_name)
-
-      identify_file = PuppetUnit::Services::ConfigService.get("libvirt")["identity_file"]
-      provisioner = PuppetUnit::Provisioner.new(domain_ip, identify_file)
-
-
-      provisioner.init
-      provisioner.apply(@setup_dir)
-      provisioner.assert(File.join(@assertions_dir, "resources.pp"))
-      @facts = to_facts(PuppetUnit::Util.flat_hash(provisioner.facts["values"]))
+      @provisioner.lock
+      @provisioner.prepare
+      @provisioner.apply(@setup_dir)
+      @provisioner.assert(File.join(@assertions_dir, "resources.pp"))
+      @facts = to_facts(PuppetUnit::Util.flat_hash(@provisioner.facts["values"]))
+      @provisioner.clear_lock
     end
 
     def set_assertions
       set_resource_assertions
       set_fact_assertions
+    end
+
+    #@Override
+    def description
+      "#{@domain_name} - #{@config["description"]}"
     end
 
     private

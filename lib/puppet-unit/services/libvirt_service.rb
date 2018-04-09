@@ -1,11 +1,24 @@
 require "singleton"
 require "libvirt"
+require 'rexml/document'
 require "puppet-unit/services/config_service"
 require "puppet-unit/libvirt/snapshot_builder"
 
 module PuppetUnit
   module Services
     class LibvirtService
+      DOMAIN_STATE = {
+          0 => "nostate",
+          1 => "running",
+          2 => "blocked",
+          3 => "paused",
+          4 => "shutdown",
+          5 => "shutoff",
+          6 => "crashed",
+          7 => "pmsuspended",
+          8 => "last",
+      }
+
       include Singleton
 
       # ==== Description
@@ -22,14 +35,28 @@ module PuppetUnit
       # @exception [RuntimeError] could not find an IP address
       def domain_ip(domain_name, network_name="default")
         connect do |connection|
-          network = connection.lookup_network_by_name(network_name)
-          entry = network.dhcp_leases.detect {|entry| entry["hostname"] == domain_name}
+          #get mac_addr of first domain network interface card assigned to network_name
+          domain = connection.lookup_domain_by_name(domain_name)
+          domain_doc = REXML::Document.new(domain.xml_desc)
+          domain_mac_addr = REXML::XPath.first(domain_doc, "string(/domain/devices/interface/source[@network='#{network_name}']/ancestor::interface/mac/@address)")
 
-          if entry.nil?
-            raise "no dhcp entry found for #{domain_name}"
+          #use domain mac_addr to query dhcp entries of network
+          network = connection.lookup_network_by_name(network_name)
+          network_doc = REXML::Document.new(network.xml_desc)
+          _domain_ip = REXML::XPath.first(network_doc, "string(/network/ip/dhcp/host[@mac='#{domain_mac_addr}']/@ip)")
+
+          if _domain_ip.empty?
+            raise("no dhcp entry found for #{domain_name}")
           else
-            entry["ipaddr"]
+            _domain_ip
           end
+        end
+      end
+
+      def domain_state(domain_name)
+        connect do |connection|
+          domain = connection.lookup_domain_by_name(domain_name)
+          DOMAIN_STATE[domain.state[0]]
         end
       end
 
@@ -43,6 +70,26 @@ module PuppetUnit
           domain = connection.lookup_domain_by_name(domain_name)
           create_snapshot_xml = Libvirt::SnapshotBuilder.new(domain, overrides).build.to_s
           domain.snapshot_create_xml(create_snapshot_xml)
+        end
+      end
+
+      def delete_snapshots_later_than(domain_name, snapshot_name)
+        connect do |connection|
+          domain = connection.lookup_domain_by_name(domain_name)
+
+          delete_later_than_snapshot = domain.lookup_snapshot_by_name(snapshot_name)
+          delete_later_than_timestamp = snapshot_creation_time(delete_later_than_snapshot)
+
+          snapshots = domain.list_all_snapshots.reject do |snapshot|
+            snapshot.name == snapshot_name
+          end
+
+          snapshots.each do |snapshot|
+            if snapshot_creation_time(snapshot) > delete_later_than_timestamp
+              PuppetUnit::Services::LogService.instance.debug("Deleting snapshot #{snapshot.name}")
+              snapshot.delete
+            end
+          end
         end
       end
 
@@ -85,6 +132,12 @@ module PuppetUnit
             end
           end
         end
+      end
+
+      def snapshot_creation_time(snapshot)
+        snapshot_doc = REXML::Document.new(snapshot.xml_desc)
+        creation_time_unix_timestamp = REXML::XPath.first(snapshot_doc, "string(/domainsnapshot/creationTime)").to_i
+        creation_time_unix_timestamp
       end
     end
   end

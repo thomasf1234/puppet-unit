@@ -62,7 +62,7 @@ module PuppetUnit
             ensure
               test.teardown
               test.finish
-              puts(format("   Duration: #{test.duration}s", :light_blue))
+              puts(format("   Duration: #{PuppetUnit::Util.seconds(test.duration)}s", :light_blue))
             end
           end
 
@@ -99,13 +99,11 @@ module PuppetUnit
     end
 
     def duration
-      _duration = if finished?
-                    @finished_at - @started_at
-                  elsif started?
-                    Time.now - @started_at
-                  end
-
-      "%0.1f" % _duration
+      if finished?
+        @finished_at - @started_at
+      elsif started?
+        Time.now - @started_at
+      end
     end
 
     def order(tests)
@@ -148,7 +146,7 @@ module PuppetUnit
 
     def print_result
       puts("")
-      puts(format("Finished in #{duration} seconds", :light_blue))
+      puts(format("Finished in #{PuppetUnit::Util.minutes_and_seconds(duration)}", :light_blue))
       ran_tests = @tests.reject(&:skip?)
       ran_count = ran_tests.count
       passed_count = ran_tests.reject(&:has_error?).select(&:passed?).count

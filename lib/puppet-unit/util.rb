@@ -24,5 +24,14 @@ module PuppetUnit
       end
       Dir.mkdir(tmp_dir)
     end
+
+    def self.minutes_and_seconds(time)
+      seconds = time.to_i
+      "#{seconds / 60}m #{seconds % 60}s"
+    end
+
+    def self.seconds(time)
+      "%0.1f" % time
+    end
   end
 end
