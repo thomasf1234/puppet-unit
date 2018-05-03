@@ -7,3 +7,5 @@
 /tmp/
 /.idea/
 /vendor
+/test_module/vendor
+/test_module/tmp

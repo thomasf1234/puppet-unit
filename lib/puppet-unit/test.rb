@@ -1,3 +1,5 @@
+require "puppet-unit/test_log"
+
 module PuppetUnit
   class Test
     module States
@@ -7,12 +9,13 @@ module PuppetUnit
       SKIPPED = "SKIPPED"
     end
 
-    attr_reader :state, :assertions
+    attr_reader :state, :assertions, :log
 
     def initialize
       @state = States::NOT_STARTED
       @assertions = []
       @has_error = false
+      @log = PuppetUnit::TestLog.new
     end
 
     def started?

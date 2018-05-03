@@ -4,6 +4,8 @@ require "puppet-unit/util"
 
 module PuppetUnit
   class ModuleTest < PuppetUnit::Test
+    attr_reader :domain_name
+
     def initialize(test_dir, domain_name)
       super()
       @test_dir = test_dir
@@ -24,17 +26,20 @@ module PuppetUnit
       @provisioner = PuppetUnit::Provisioner.new(domain_name)
     end
 
-
+    #@Override
     def setup
       PuppetUnit::Services::LogService.instance.debug("Refreshing tmp directory")
       PuppetUnit::Util.refresh_tmp
 
-      @provisioner.lock
-      @provisioner.prepare
-      @provisioner.apply(@setup_dir)
-      @provisioner.assert(File.join(@assertions_dir, "resources.pp"))
-      @facts = to_facts(PuppetUnit::Util.flat_hash(@provisioner.facts["values"]))
-      @provisioner.clear_lock
+      begin
+        @provisioner.lock
+        @provisioner.prepare
+        @provisioner.apply(@setup_dir)
+        @provisioner.assert(File.join(@assertions_dir, "resources.pp"))
+        @facts = to_facts(PuppetUnit::Util.flat_hash(@provisioner.facts["values"]))
+      ensure
+        @provisioner.clear_lock 
+      end
     end
 
     def set_assertions

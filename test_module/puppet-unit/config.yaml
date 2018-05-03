@@ -1,2 +1,12 @@
 ---
 order: rand
+libvirt:
+  connect_uri: "qemu+ssh://ad@192.168.1.127/system"
+  domains:
+    tst-ub16:
+      network: "default"
+      snapshot: "test_base"
+      ssh_user: "deploy"
+      ssh_identity_file: "~/.ssh/deploy.id_rsa"
+
+

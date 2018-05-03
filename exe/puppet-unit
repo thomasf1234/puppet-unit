@@ -11,6 +11,7 @@ require "puppet-unit/helper.rb" if File.exist?("puppet-unit/helper.rb")
 module_tests = []
 module_test_dirs = ARGV[0] ? [ARGV[0]] : Dir[File.join("puppet-unit", "tests", "*")]
 
+PuppetUnit::Services::LogService.instance.debug("Loading domains")
 domain_names = PuppetUnit::Services::ConfigService.instance.get("libvirt")["domains"].keys
 
 module_test_dirs.each do |module_test_dir|

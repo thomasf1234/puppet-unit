@@ -13,6 +13,9 @@ module PuppetUnit
     def initialize(domain_name)
       @domain_name = domain_name
       @domain_ip = PuppetUnit::Services::LibvirtService.instance.domain_ip(domain_name, domain_config["network"])
+      @remote_environment_dir = "/etc/puppetlabs/code/environments/test"
+      @remote_modules_dir = "/etc/puppetlabs/code/modules/"
+      @remote_data_dir = "/etc/puppetlabs/puppet/data/environments/test/"
     end
 
     def lock
@@ -89,7 +92,7 @@ module PuppetUnit
 
           module_dependencies.each do |module_dependency|
             PuppetUnit::Services::LogService.instance.debug("Installing module dependency #{module_dependency}")
-            session.exec!("puppet module install  --target-dir /etc/puppetlabs/code/vendor #{module_dependency}")
+            session.exec!("puppet module install --target-dir /etc/puppetlabs/code/vendor #{module_dependency}")
           end
 
           PuppetUnit::Services::LogService.instance.debug("Creating snapshot 'test_prepared'")
@@ -106,13 +109,17 @@ module PuppetUnit
         manifests_dir = File.join(setup_dir, "manifests")
         data_file = File.join(setup_dir, "data", "base.yaml")
         module_dir = File.join(setup_dir, "modules", "helper")
-        session.scp.upload!(manifests_dir, "/etc/puppetlabs/code/environments/test", :recursive => true)
-        session.scp.upload!(data_file, "/etc/puppetlabs/puppet/data/environments/test/")
+        
+        PuppetUnit::Services::LogService.instance.debug("Uploading #{manifests_dir} to #{@remote_environment_dir}")
+        session.scp.upload!(manifests_dir, @remote_environment_dir, :recursive => true)
+        PuppetUnit::Services::LogService.instance.debug("Uploading #{data_file} to #{@remote_data_dir}")
+        session.scp.upload!(data_file, @remote_data_dir)
 
         if File.exist?(module_dir)
-          session.scp.upload!(module_dir, "/etc/puppetlabs/code/modules/", :recursive => true)
+          PuppetUnit::Services::LogService.instance.debug("Uploading #{module_dir} to #{@remote_modules_dir}")
+          session.scp.upload!(module_dir, @remote_modules_dir, :recursive => true)
         end
-        puppet_log = session.exec!("sudo puppet apply --debug --environment test /etc/puppetlabs/code/environments/test")
+        puppet_log = session.exec!("sudo puppet apply --debug --environment test #{@remote_environment_dir}")
         File.open("tmp/lastrunapply.log", "w") { |file| file.write(puppet_log) }
       end
     end
@@ -122,7 +129,7 @@ module PuppetUnit
         File.delete("tmp/lastrunreport.yaml") if File.directory?("tmp") & File.exist?("tmp/lastrunreport.yaml")
         session.scp.upload!(resources_manifest, "/tmp")
         session.exec!("sudo rm -f /tmp/lastrunreport.yaml")
-        noop_log = session.exec!("sudo puppet apply --environment test --debug --noop --lastrunreport /tmp/lastrunreport.yaml --modulepath /etc/puppetlabs/code/modules /tmp/resources.pp")
+        noop_log = session.exec!("sudo puppet apply --environment test --debug --noop --lastrunreport /tmp/lastrunreport.yaml --modulepath #{@remote_modules_dir} /tmp/resources.pp")
         File.open("tmp/lastrunnoop.log", "w") { |file| file.write(noop_log) }
         session.exec!("sudo chown deploy:deploy /tmp/lastrunreport.yaml")
         session.scp.download!("/tmp/lastrunreport.yaml", "tmp/")
@@ -131,7 +138,7 @@ module PuppetUnit
 
     def facts
       ssh do |session|
-        facts_json = session.exec!("puppet facts --basemodulepath /etc/puppetlabs/code/modules")
+        facts_json = session.exec!("puppet facts --basemodulepath #{@remote_modules_dir}")
         File.open("tmp/actual_facts.json", "w") { |file| file.write(facts_json) }
         JSON.parse(facts_json)
       end
@@ -139,13 +146,15 @@ module PuppetUnit
 
     def clear_lock
       ssh do |session|
-        PuppetUnit::Services::LogService.instance.debug("Removing our lock")
-        session.exec!("rm -f /tmp/module_test.marshal")
-
         if session.exec!("test -f /tmp/module_test.marshal && printf true") == "true"
-          raise("Failed to remove lock")
+          PuppetUnit::Services::LogService.instance.debug("Removing our lock")
+          session.exec!("rm -f /tmp/module_test.marshal")
+
+          if session.exec!("test -f /tmp/module_test.marshal && printf true") == "true"
+            raise("Failed to remove lock")
+          end
         else
-          true
+          PuppetUnit::Services::LogService.instance.debug("Lockfile not found")
         end
       end
     end

@@ -25,52 +25,67 @@ module PuppetUnit
       if pending?
         start
         tests = order(@tests)
-        tests.each_with_index do |test, index|
-          test_number = index + 1
-          PuppetUnit::Services::LogService.instance.raw(format("#{test_number}) #{test.class.name}", :bold))
-          PuppetUnit::Services::LogService.instance.raw(format("   Description: #{test.description}", :bold))
 
-          if test.skip?
-            skip(test)
-          else
-            begin
-              test.start
+        threads = []
 
-              begin
-                test.setup
-                test.set_assertions
+        tests.group_by(&:domain_name).each do |domain_name, module_tests|
+          thread = Thread.new do
+            module_tests.each_with_index do |test, index|
+              test_number = index + 1
+              test.log.append(format("#{test_number}) #{test.class.name}", :bold))
+              test.log.append(format("   Description: #{test.description}", :bold))
 
-                test.assertions.each do |assertion|
+              if test.skip?
+                test.skip
+                test.log.append(format("   Result: Test skipped *", :yellow))
+              else
+                begin
+                  test.start
+
                   begin
-                    puts(format("   Assertion: #{assertion.description}", :light_blue))
+                    test.setup
+                    test.set_assertions
 
-                    if assertion.true?
-                      pass(assertion)
-                    else
-                      fail(assertion)
+                    test.assertions.each do |assertion|
+                      begin
+                        test.log.append(format("   Assertion: #{assertion.description}", :light_blue))
+
+                        if assertion.true?
+                          assertion.result.pass
+                          test.log.append(format("   Result: Assertion passed ✔", :green))
+                        else
+                          assertion.result.fail
+                          test.log.append(format("   Result: Assertion failed ✘", :red))
+                          assertion.failed_message_lines.each do |line|
+                            test.log.append(format("   ==> #{line}", :red))
+                          end
+                        end
+                      rescue => assertion_ex
+                        assertion.result.fail
+                        log_error(test, assertion_ex)
+                      end
                     end
-                  rescue => assertion_ex
-                    assertion.result.fail
-                    print_error(assertion_ex)
+                  rescue => test_ex
+                    #reach here if exception raised during setup
+                    test.error
+                    log_error(test, test_ex)
                   end
+                ensure
+                  test.teardown
+                  test.finish
+                  test.log.append(format("   Duration: #{PuppetUnit::Util.seconds(test.duration)}s", :light_blue))
                 end
-              rescue => test_ex
-                #reach here if exception raised during setup
-                test.error
-                print_error(test_ex)
               end
-            ensure
-              test.teardown
-              test.finish
-              puts(format("   Duration: #{PuppetUnit::Util.seconds(test.duration)}s", :light_blue))
             end
           end
 
-          puts("")
+          threads << thread
         end
 
+        threads.each(&:join)
         finish
-        print_result
+
+        print_result(tests)
       else
         raise "run called when not in PENDING state."
       end
@@ -115,37 +130,23 @@ module PuppetUnit
       end
     end
 
+    def log_error(test, exception)
+      test.log.append(format("   #{exception.class.name} :: #{exception.message}", :red))
+      exception.backtrace.each do |line|
+        test.log.append(format("   #{line}", :red))
+      end
+    end
+
     def format(string, colour)
       colour.nil? ? string : "\e[#{STRING_FORMAT_CODES[colour]}m#{string}\e[0m"
     end
 
-    def skip(test)
-      test.skip
-      puts(format("   Result: Test skipped *", :yellow))
-    end
-
-    def pass(assertion)
-      assertion.result.pass
-      puts(format("   Result: Assertion passed ✔", :green))
-    end
-
-    def fail(assertion)
-      assertion.result.fail
-      puts(format("   Result: Assertion failed ✘", :red))
-      assertion.failed_message_lines.each do |line|
-        puts(format("   ==> #{line}", :red))
+    def print_result(tests)
+      tests.each do |test|
+        test.log.print
+        puts("")
       end
-    end
-
-    def print_error(exception)
-      puts(format("   #{exception.class.name} :: #{exception.message}", :red))
-      exception.backtrace.each do |line|
-        puts(format("   #{line}", :red))
-      end
-    end
-
-    def print_result
-      puts("")
+      
       puts(format("Finished in #{PuppetUnit::Util.minutes_and_seconds(duration)}", :light_blue))
       ran_tests = @tests.reject(&:skip?)
       ran_count = ran_tests.count
