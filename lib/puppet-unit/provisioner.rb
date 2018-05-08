@@ -178,7 +178,8 @@ module PuppetUnit
     def ssh(options={})
       options = {
           :host_key => "ssh-rsa",
-          :keys => [ domain_config["ssh_identity_file"] ]
+          :keys => [ domain_config["ssh_identity_file"] ],
+          :verify_host_key => Net::SSH::Verifiers::Null.new
       }.merge(options)
 
       Net::SSH.start(@domain_ip, domain_config["ssh_user"], options) do |session|
