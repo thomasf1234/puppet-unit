@@ -87,8 +87,8 @@ module PuppetUnit
         if system("tar -zc -f tmp/#{cwd_name}.tgz --exclude tmp .")
           PuppetUnit::Services::LogService.instance.debug("uploading tmp/#{cwd_name}.tgz to /tmp/#{cwd_name}.tgz")
           session.scp.upload!("tmp/#{cwd_name}.tgz", "/tmp/#{cwd_name}.tgz")
-          PuppetUnit::Services::LogService.instance.debug("Extracting /tmp/#{cwd_name}.tgz to /etc/puppetlabs/code/modules/#{cwd_name}")
-          session.exec!("mkdir -p /etc/puppetlabs/code/modules/#{cwd_name} && tar -mxz -f /tmp/#{cwd_name}.tgz -C /etc/puppetlabs/code/modules/#{cwd_name}")
+          PuppetUnit::Services::LogService.instance.debug("Extracting /tmp/#{cwd_name}.tgz to /etc/puppetlabs/code/modules/#{module_name}")
+          session.exec!("mkdir -p /etc/puppetlabs/code/modules/#{module_name} && tar -mxz -f /tmp/#{cwd_name}.tgz -C /etc/puppetlabs/code/modules/#{module_name}")
 
           module_dependencies.each do |module_dependency|
             PuppetUnit::Services::LogService.instance.debug("Installing module dependency #{module_dependency}")
@@ -119,7 +119,7 @@ module PuppetUnit
           PuppetUnit::Services::LogService.instance.debug("Uploading #{module_dir} to #{@remote_modules_dir}")
           session.scp.upload!(module_dir, @remote_modules_dir, :recursive => true)
         end
-        puppet_log = session.exec!("sudo puppet apply --debug --environment test #{@remote_environment_dir}")
+        puppet_log = session.exec!("sudo -i puppet apply --debug --environment test #{@remote_environment_dir}")
         File.open("tmp/lastrunapply.log", "w") { |file| file.write(puppet_log) }
       end
     end
@@ -185,6 +185,10 @@ module PuppetUnit
       Net::SSH.start(@domain_ip, domain_config["ssh_user"], options) do |session|
         yield(session)
       end
+    end
+
+    def module_name
+      PuppetUnit::Services::ConfigService.instance.get("module_name") || cwd_name
     end
 
     def domain_config
